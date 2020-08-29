@@ -50,7 +50,7 @@ void setup() {
   if (!SD.begin(chipSelect))
   {
     Serial.println("Card failed, or not present");
-    while (true);
+    errorInicializacao(3,200,500);
   }
   Serial.println("card initialized.");
   File myFile = SD.open("config.txt");
@@ -71,7 +71,8 @@ void setup() {
         line++;
       }
     }
-  }
+  } 
+    
   myFile.close();
   configParametros();
 
@@ -165,5 +166,21 @@ String sensorSolo() {
   valor_solo =  map(valor_solo, analogSoloMolhado, analogSoloSeco, percSoloMolhado, percSoloSeco); //EXECUTA A FUNÇÃO "map" DE ACORDO COM OS PARÂMETROS PASSADOS
   String umidadeSolo = String(valor_solo, 4);
   return  String("{") + char(34) + "umidadeSolo" + char(34) + ":" + umidadeSolo + "}";
+
+}
+
+void errorInicializacao(int vezes,int frequencia,int del) {
+  buzzer.begin(100);
+  for(int i=0;i<vezes;i++){
+    Serial.println(i);
+    
+  buzzer.sound(frequencia, 800);
+  buzzer.sound(0, 80); 
+  delay(del);
+    
+  }
+  delay(5000);
+  asm volatile ("  jmp 0");
+  
 
 }
