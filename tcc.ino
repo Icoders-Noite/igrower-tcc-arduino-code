@@ -50,10 +50,10 @@ void setup() {
   if (!SD.begin(chipSelect))
   {
     Serial.println("Card failed, or not present");
-    errorInicializacao(3,200,500);
+    errorInicializacao(3, 200, 500);
   }
   Serial.println("card initialized.");
-  File myFile = SD.open("config.txt");
+  File myFile = SD.open("CONFIG.txt");
   if (myFile)
   {
     while (myFile.available())
@@ -71,8 +71,8 @@ void setup() {
         line++;
       }
     }
-  } 
-    
+  }
+
   myFile.close();
   configParametros();
 
@@ -88,10 +88,6 @@ void setup() {
 }
 
 void loop() {
-  sensorSolo();
-  delay(5000);
-  verificarSolo();
-  delay(1000);
 
 }
 
@@ -101,9 +97,7 @@ String sensorHumidade() {
   DHT.read11(pinoDHT11); //LÊ AS INFORMAÇÕES DO SENSOR
   String humidity = String(DHT.humidity, 4);
   String temperature = String(DHT.temperature, 4);
-  return  String("{")
-          + char(34) + "umidade" + char(34) + ":" + humidity + "," + char(34) + "temperatura" + char(34) + ":" + temperature + "}";
-
+  return  String("{") + char(34) + "umidade" + char(34) + ":" + humidity + "," + char(34) + "temperatura" + char(34) + ":" + temperature + "}";
 }
 void musica() {
   buzzer.begin(100);
@@ -146,8 +140,7 @@ void acionaValvula() {
   digitalWrite(pin_valvula, HIGH);
 }
 
-void verificarSolo()
-{
+void verificarSolo() {
 
   int valor_solo = constrain(analogRead(sensor_solo), analogSoloMolhado, analogSoloSeco); //MANTÉM valorLido DENTRO DO INTERVALO (ENTRE analogSoloMolhado E analogSoloSeco)
   Serial.println(valor_solo);
@@ -158,7 +151,6 @@ void verificarSolo()
       acionaValvula();
     }
   }
-
 }
 
 String sensorSolo() {
@@ -166,21 +158,51 @@ String sensorSolo() {
   valor_solo =  map(valor_solo, analogSoloMolhado, analogSoloSeco, percSoloMolhado, percSoloSeco); //EXECUTA A FUNÇÃO "map" DE ACORDO COM OS PARÂMETROS PASSADOS
   String umidadeSolo = String(valor_solo, 4);
   return  String("{") + char(34) + "umidadeSolo" + char(34) + ":" + umidadeSolo + "}";
-
 }
 
-void errorInicializacao(int vezes,int frequencia,int del) {
+void errorInicializacao(int vezes, int frequencia, int del) {
   buzzer.begin(100);
-  for(int i=0;i<vezes;i++){
-    Serial.println(i);
-    
-  buzzer.sound(frequencia, 800);
-  buzzer.sound(0, 80); 
-  delay(del);
-    
+  for (int i = 0; i < vezes; i++) {
+  
+    buzzer.sound(frequencia, 800);
+    buzzer.sound(0, 80);
+    delay(del);
   }
   delay(5000);
   asm volatile ("  jmp 0");
-  
+}
 
+void gravarEmArquivo(char* novosParametros) {
+
+  File myFile  = SD.open("CONFIG.txt", FILE_WRITE);
+  if (myFile) {
+
+    SD.remove("CONFIG.txt");
+    myFile  = SD.open("CONFIG.txt", FILE_WRITE);
+    //Inicia a escrita sempre na primeira linha do arquivo, sobrescrevendo os dados anteriores.
+    myFile.print(String(getValue(novosParametros, ';', 0) ) + "\n" + getValue(novosParametros, ';', 1) + "\n" + getValue(novosParametros, ';', 2)  + "\n" + getValue(novosParametros, ';', 3)  + "\n"); //Escreve os valores das potências acumuladas.
+    myFile.close(); //Fecha o arquivo.
+    asm volatile ("  jmp 0");//reinicia o arduino
+  } else {
+    myFile.close();
+    errorInicializacao(3, 500, 500);
+  }
+
+}
+
+String getValue(String data, char separator, int index)
+{
+  int found = 0;
+  int strIndex[] = {0, -1};
+  int maxIndex = data.length() - 1;
+
+  for (int i = 0; i <= maxIndex && found <= index; i++) {
+    if (data.charAt(i) == separator || i == maxIndex) {
+      found++;
+      strIndex[0] = strIndex[1] + 1;
+      strIndex[1] = (i == maxIndex) ? i + 1 : i;
+    }
+  }
+
+  return found > index ? data.substring(strIndex[0], strIndex[1]) : "";
 }
